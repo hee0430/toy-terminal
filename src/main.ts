@@ -637,7 +637,8 @@ new ResizeObserver(fitVisible).observe($("#terms"));
 function openLocalTab(title: string, shell: string, admin: boolean, icon?: ProfileIcon, profile?: Profile) {
   const cmd = admin ? "open_local_admin" : "open_local";
   const shellName = shell === "pwsh" ? "PowerShell 7" : shell === "powershell" ? "Windows PowerShell 5.1" : "cmd.exe";
-  return createTab(title, "local", (cols, rows) => invoke<string>(cmd, { shell, cols, rows }), admin, icon, `Windows local shell: ${shellName}`, profile);
+  const context = shell === "shell" ? "Local shell: Terminal" : `Windows local shell: ${shellName}`;
+  return createTab(title, "local", (cols, rows) => invoke<string>(cmd, { shell, cols, rows }), admin, icon, context, profile);
 }
 
 // 색상 구성이 바뀌면 열려 있는 모든 터미널에 바로 적용한다.

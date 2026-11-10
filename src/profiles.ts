@@ -7,7 +7,7 @@ import { parseSshConfig } from "./sshConfig";
 import { parseForward, parseForwards, type Forward } from "./sshForward";
 import { deleteSecrets, hasSecret, saveSecret, vaultStatus } from "./vault";
 
-export type Kind = "pwsh" | "powershell" | "cmd" | "ssh";
+export type Kind = "pwsh" | "powershell" | "cmd" | "shell" | "ssh";
 
 export type Profile = {
   id: string;
@@ -34,7 +34,10 @@ export type TreeNode = Profile | Folder;
 
 const uid = () => crypto.randomUUID();
 // 제품 이름이라 번역하지 않는다.
-const KIND_LABEL: Record<Kind, string> = { pwsh: "PowerShell 7", powershell: "Windows PowerShell", cmd: "cmd", ssh: "SSH" };
+const KIND_LABEL: Record<Kind, string> = { pwsh: "PowerShell 7", powershell: "Windows PowerShell", cmd: "cmd", shell: "Terminal", ssh: "SSH" };
+// macOS에는 PowerShell/cmd와 UAC 관리자 실행이 없다. 기본 셸(Terminal)만 쓴다.
+const IS_MAC = navigator.userAgent.includes("Mac");
+const KINDS: Kind[] = IS_MAC ? ["shell", "ssh"] : ["pwsh", "powershell", "cmd", "ssh"];
 const defaultEmoji = (kind: Kind) => (kind === "ssh" ? "🔐" : "💻");
 
 let root: Folder = { id: "root", type: "folder", name: "", open: true, children: [] };
@@ -141,7 +144,7 @@ function defaultTree(): Folder {
         type: "folder",
         name: "Local",
         open: true,
-        children: [mk("PowerShell 7", "pwsh"), mk("Windows PowerShell", "powershell"), mk("cmd", "cmd")],
+        children: IS_MAC ? [mk("Terminal", "shell")] : [mk("PowerShell 7", "pwsh"), mk("Windows PowerShell", "powershell"), mk("cmd", "cmd")],
       },
     ],
   };
@@ -158,7 +161,7 @@ function editProfile(p?: Profile): Promise<EditResult | null> {
     const dlg = modal((d) => {
       d.innerHTML = `<form method="dialog"><h3></h3>
         <label><span data-i18n="profile.field.name"></span> <input name="name" required /></label>
-        <label><span data-i18n="profile.field.kind"></span> <select name="kind">${(Object.keys(KIND_LABEL) as Kind[])
+        <label><span data-i18n="profile.field.kind"></span> <select name="kind">${KINDS
           .map((k) => `<option value="${k}">${KIND_LABEL[k]}</option>`)
           .join("")}</select></label>
         <div class="iconrow"><span data-i18n="profile.field.icon"></span>
@@ -262,7 +265,7 @@ function editProfile(p?: Profile): Promise<EditResult | null> {
       const sync = () => {
         const ssh = f("kind").value === "ssh";
         sshBox.hidden = !ssh;
-        localBox.hidden = ssh;
+        localBox.hidden = ssh || IS_MAC; // 로컬 전용 항목은 관리자 체크박스뿐인데 맥에는 없다
         refreshIcon();
       };
 
