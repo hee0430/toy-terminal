@@ -23,6 +23,7 @@ const T_DATA: u8 = 1;
 const T_RESIZE: u8 = 2;
 const T_EXIT: u8 = 3;
 const MAX_FRAME: usize = 1 << 20;
+#[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const ALLOWED_SHELLS: [&str; 3] = ["pwsh", "powershell", "cmd"];
 
@@ -117,9 +118,11 @@ pub async fn open_local_admin(
         "Start-Process -FilePath '{}' -ArgumentList '--admin-helper','--port','{port}','--token','{token}','--shell','{shell}','--cols','{cols}','--rows','{rows}' -Verb RunAs -WindowStyle Hidden -ErrorAction Stop",
         exe.display().to_string().replace('\'', "''"),
     );
-    let mut launcher = tokio::process::Command::new("powershell.exe")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &ps])
-        .creation_flags(CREATE_NO_WINDOW)
+    let mut cmd = tokio::process::Command::new("powershell.exe");
+    cmd.args(["-NoProfile", "-NonInteractive", "-Command", &ps]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let mut launcher = cmd
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
