@@ -1,0 +1,44 @@
+/* 앱에 포함하는 글꼴 (SIL OFL 1.1). 라이선스는 src/data/fonts-LICENSE.txt, 출처는 THIRD_PARTY_NOTICES.md.
+   웹 글꼴(woff2)만 쓰고, 영문 글꼴은 라틴 문자 범위만 담긴 파일이다. D2Coding은 한글 2350자와 기본 문자만 담은 부분집합이다. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cascadia Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/cascadia-mono/files/cascadia-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cascadia Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/cascadia-mono/files/cascadia-mono-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "D2Coding";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/d2coding/fonts/d2coding-subset.woff2") format("woff2");
+}
+@font-face {
+  font-family: "D2Coding";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../node_modules/d2coding/fonts/d2coding-bold-subset.woff2") format("woff2");
+}

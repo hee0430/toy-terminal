@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToyTerm</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- 기본 제목줄을 없애고 이 줄이 제목줄을 겸한다. 빈 곳(data-tauri-drag-region)을 잡고 창을 끈다. -->
+      <div id="tabbar" data-tauri-drag-region>
+        <button id="tabs-prev" class="tabnav" hidden data-i18n-title="tab.scrollPrev">‹</button>
+        <div id="tabs" data-tauri-drag-region></div>
+        <button id="tabs-next" class="tabnav" hidden data-i18n-title="tab.scrollNext">›</button>
+        <button id="settings-btn" data-i18n-title="settings.title"><i class="fas fa-gear"></i></button>
+        <div id="winctl">
+          <button id="win-min" data-i18n-title="window.minimize">
+            <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 5h10" stroke="currentColor" fill="none" /></svg>
+          </button>
+          <button id="win-max" data-i18n-title="window.maximize">
+            <svg class="ic-max" viewBox="0 0 10 10" width="10" height="10"><rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" fill="none" /></svg>
+            <svg class="ic-restore" viewBox="0 0 10 10" width="10" height="10"><path d="M2.5 2.5V0.5h7v7h-2M0.5 2.5h7v7h-7z" stroke="currentColor" fill="none" /></svg>
+          </button>
+          <button id="win-close" data-i18n-title="window.close">
+            <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" fill="none" /></svg>
+          </button>
+        </div>
+      </div>
+      <div id="main">
+        <div id="sidebar">
+          <nav id="sidetabs">
+            <button class="stab active" data-pane="sessions"><span data-i18n="side.sessions"></span></button>
+            <button class="stab" data-pane="sftp" hidden><span data-i18n="side.sftp"></span></button>
+            <button class="stab" data-pane="ai"><span data-i18n="side.ai"></span></button>
+            <span id="appver"></span>
+          </nav>
+          <aside id="profiles" class="spane">
+            <ul id="ptree"></ul>
+            <div id="pstatus"></div>
+          </aside>
+          <aside id="sftp" class="spane" hidden>
+            <div class="sftp-head">
+              <button id="sftp-up" data-i18n-title="sftp.up">↑</button>
+              <input id="sftp-path" spellcheck="false" />
+              <button id="sftp-refresh" data-i18n-title="sftp.refresh">⟳</button>
+            </div>
+            <ul id="sftp-list"></ul>
+            <div class="sftp-foot">
+              <button id="sftp-download" data-i18n-title="sftp.downloadTitle" disabled><i class="fas fa-circle-arrow-down"></i><span class="cnt"></span></button>
+              <button id="sftp-upload" data-i18n-title="sftp.upload"><i class="fas fa-circle-arrow-up"></i></button>
+              <button id="sftp-mkdir" data-i18n-title="sftp.mkdir"><i class="fas fa-folder-plus"></i></button>
+              <span id="sftp-msg"></span>
+            </div>
+            <label class="follow"><input type="checkbox" id="sftp-follow" /> <span data-i18n="sftp.follow"></span></label>
+          </aside>
+          <aside id="ai" class="spane" hidden>
+            <div id="ai-hint" hidden>
+              <span data-i18n="ai.notConfigured"></span>
+              <button id="ai-open-settings" data-i18n="ai.openSettings"></button>
+            </div>
+            <div id="ai-msgs"></div>
+            <p id="ai-tip" data-i18n="ai.tip"></p>
+            <div id="ai-attach"></div>
+            <div class="ai-tools">
+              <button id="ai-attach-sel" data-i18n="ai.attachSelection"></button>
+              <button id="ai-attach-last" data-i18n="ai.attachLast"></button>
+              <span id="ai-note"></span>
+              <button id="ai-new" data-i18n-title="ai.newChat"><i class="fas fa-rotate-right"></i></button>
+            </div>
+            <div class="ai-tools">
+              <label class="follow-lite"><input type="checkbox" id="ai-auto" /> <span data-i18n="ai.autoScreen"></span></label>
+              <button id="ai-explain" data-i18n="ai.explain"></button>
+            </div>
+            <div class="ai-input">
+              <textarea id="ai-input" rows="3" spellcheck="false" data-i18n-placeholder="ai.placeholder"></textarea>
+              <button id="ai-send" class="ok"></button>
+            </div>
+          </aside>
+        </div>
+        <div id="splitter"></div>
+        <div id="terms">
+          <div id="termsearch" hidden>
+            <input id="ts-input" spellcheck="false" data-i18n-placeholder="terminal.searchPlaceholder" />
+            <button id="ts-case" data-i18n-title="terminal.searchCase">Aa</button>
+            <button id="ts-prev" data-i18n-title="terminal.searchPrev">↑</button>
+            <button id="ts-next" data-i18n-title="terminal.searchNext">↓</button>
+            <button id="ts-close" data-i18n-title="terminal.searchClose">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

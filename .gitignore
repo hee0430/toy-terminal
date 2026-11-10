@@ -1,0 +1,34 @@
+# 의존성, 빌드 결과물
+node_modules/
+dist/
+release/
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# 실제 서버 정보와 개인 데이터: 프로필, 호스트 지문, 저장된 비밀번호(secrets.json), 설정, 로그
+import/
+profiles.json
+known_hosts.json
+secrets.json
+settings.json
+logs/
+*.jsonl
+
+# 키, 인증서, 환경 변수
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# 기타
+.claude/*
+!.claude/docs/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+.idea/

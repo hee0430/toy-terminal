@@ -1,0 +1,29 @@
+[package]
+name = "toyterm"
+version = "1.0.1"
+license = "MIT"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+anyhow = "1.0.104"
+base64 = "0.23.1"
+getrandom = "0.4.3"
+portable-pty = "0.9.0"
+# aws-lc는 Windows에서 NASM이 필요하므로 ring을 직접 지정한다 (russh와 동일)
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+russh = { version = "0.65.1", default-features = false, features = ["ring", "flate2", "rsa"] }
+russh-sftp = "3.0.1"
+regex = "1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tokio = { version = "1.54.1", features = ["full"] }
+tauri-plugin-clipboard-manager = "2"
+argon2 = "0.6.0"
+aes-gcm = "0.11.1"
+zeroize = "1.9.1"
