@@ -1,6 +1,6 @@
 # ToyTerm
 
-Windows용 SSH/로컬 셸 터미널입니다. 여러 서버를 탭과 분할 화면으로 열고, SFTP로 파일을 주고받고, 필요하면 AI 도우미에게 물어볼 수 있습니다. (Tauri + xterm.js + Rust)
+Windows와 macOS용 SSH/로컬 셸 터미널입니다. 여러 서버를 탭과 분할 화면으로 열고, SFTP로 파일을 주고받고, 필요하면 AI 도우미에게 물어볼 수 있습니다. (Tauri + xterm.js + Rust)
 
 ## 다운로드
 
@@ -10,15 +10,24 @@ Windows용 SSH/로컬 셸 터미널입니다. 여러 서버를 탭과 분할 화
 | --- | --- |
 | `ToyTerm_<버전>_x64-setup.exe` | 설치 파일 |
 | `ToyTerm_<버전>_x64_portable.exe` | 설치 없이 바로 실행 |
+| `ToyTerm_<버전>_universal.dmg` | macOS용 (Apple Silicon, Intel 공용) |
+
+**Windows**
 
 * Windows 10/11 (64비트)용입니다.
 * 코드 서명이 없어서 Windows SmartScreen이 "알 수 없는 게시자" 경고를 띄울 수 있습니다. "추가 정보 → 실행"을 누르면 됩니다.
+
+**macOS**
+
+* dmg를 열어 ToyTerm을 Applications로 옮깁니다.
+* 코드 서명과 공증이 없어서 처음 실행할 때 막힐 수 있습니다. 앱을 우클릭 → 열기로 승인하세요. "손상되었다"고 나오면 터미널에서 `xattr -cr /Applications/ToyTerm.app`을 실행합니다.
+* 로컬 탭은 사용자의 기본 셸(zsh 등)로 열립니다. PowerShell, cmd, 관리자 권한 실행은 Windows 전용입니다.
 
 ## 주요 기능
 
 **접속과 세션**
 
-* SSH와 로컬 셸(PowerShell 7, Windows PowerShell, cmd, 관리자 권한) 탭
+* SSH와 로컬 셸 탭 (Windows: PowerShell 7, Windows PowerShell, cmd, 관리자 권한 / macOS: 기본 셸)
 * 폴더로 정리하는 세션 목록, 끌어서 옮기기
 * 이 PC의 `~/.ssh/config`를 "로컬 세션" 폴더에 읽기 전용으로 표시
 * 비밀번호 저장: 마스터 비밀번호로 암호화 (Argon2id + AES-256-GCM)
@@ -43,7 +52,7 @@ Windows용 SSH/로컬 셸 터미널입니다. 여러 서버를 탭과 분할 화
 
 ## 저장되는 파일
 
-실행 파일과 같은 폴더에 저장됩니다.
+Windows는 실행 파일과 같은 폴더에, macOS는 `~/Library/Application Support/com.toy.terminal/`에 저장됩니다.
 
 | 파일 | 내용 |
 | --- | --- |
@@ -57,14 +66,14 @@ Windows용 SSH/로컬 셸 터미널입니다. 여러 서버를 탭과 분할 화
 
 ## 개발
 
-필요한 것: Node.js, Rust(MSVC 툴체인), WebView2
+필요한 것: Node.js, Rust. Windows는 MSVC 툴체인과 WebView2, macOS는 Xcode Command Line Tools
 
 ```bash
 npm install
 npm run tauri dev      # 개발 모드로 실행
 npm test               # 프런트 단위 테스트
 npm run i18n:check     # 화면 문구 키 검사
-npm run release        # 설치 파일과 portable 실행 파일을 release/ 에 만든다
+npm run release        # (Windows) 설치 파일과 portable 실행 파일을 release/ 에 만든다
 ```
 
 Rust 테스트는 `src-tauri` 폴더에서 `cargo test --bin toyterm`으로 돌립니다. 키 파일 읽기 테스트는 `ssh-keygen`이 필요합니다.

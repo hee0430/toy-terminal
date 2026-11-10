@@ -1,6 +1,6 @@
 # 저장 파일 위치
 
-모두 **실행 파일과 같은 폴더**에 둔다 (개발 중에는 `src-tauri/target/debug/`, `cargo clean`하면 같이 지워짐). 폴더에 쓸 수 없으면 저장 시 오류만 표시하고 대체 경로는 없다.
+모두 `src-tauri/src/paths.rs`의 `data_path()`가 정한 폴더에 둔다. Windows(와 macOS 외 OS)는 **실행 파일과 같은 폴더**이고, macOS는 앱 번들 안에 쓸 수 없어서 `~/Library/Application Support/com.toy.terminal/`이다. 새 데이터 파일은 `current_exe()`를 직접 쓰지 말고 `data_path()`를 쓴다 (Windows 개발 중에는 `src-tauri/target/debug/`, `cargo clean`하면 같이 지워짐). 폴더에 쓸 수 없으면 저장 시 오류만 표시하고 대체 경로는 없다.
 
 - `profiles.json`: 프로필 트리. 비밀번호·키 암호는 저장하지 않는다. 예전 위치(`%APPDATA%\com.toy.terminal\`)에만 있으면 첫 실행에서 복사한다.
 - `secrets.json`: 저장한 비밀번호·키 암호. 마스터 비밀번호(저장하지 않음)로 Argon2id 키를 만들어 AES-256-GCM으로 암호화하고, 항목 id를 추가 인증 데이터로 묶는다. 마스터 비밀번호가 맞는지는 고정 문구를 암호화한 검증값으로 확인한다. 잠금을 푼 키는 앱이 켜져 있는 동안 메모리에만 둔다(`secrets.rs`). 잊으면 복구할 수 없어 전체 삭제(`secrets_reset`)만 가능하다.

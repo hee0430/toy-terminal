@@ -4,8 +4,7 @@ use tauri::{AppHandle, Manager};
 
 /// 실행 파일과 같은 폴더의 profiles.json. 폴더에 쓸 수 없으면 저장 시 오류가 난다.
 fn path(app: &AppHandle) -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    let new = exe.with_file_name("profiles.json");
+    let new = crate::paths::data_path("profiles.json")?;
     // 예전 위치(%APPDATA%)에만 파일이 있으면 처음 한 번 복사해 온다. 원본은 지우지 않는다.
     if !new.exists() {
         if let Ok(old) = app.path().app_config_dir().map(|d| d.join("profiles.json")) {

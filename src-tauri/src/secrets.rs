@@ -107,8 +107,7 @@ pub struct SecretsState {
 
 /// 실행 파일과 같은 폴더의 secrets.json (profiles.json과 같은 곳)
 fn path() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    Ok(exe.with_file_name("secrets.json"))
+    crate::paths::data_path("secrets.json")
 }
 
 fn load() -> Result<Option<Vault>, String> {

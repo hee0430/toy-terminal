@@ -210,7 +210,7 @@
       "changed": "Master password changed",
       "resetConfirm": "This deletes all saved passwords and the master password. It cannot be undone. Continue?",
       "resetDone": "All saved passwords were deleted. You will set a new master password the next time you save one",
-      "hint": "The master password is not stored anywhere. You are asked once, the first time a saved password is needed after the app starts, and it is remembered until the app closes. They are stored in secrets.json next to the executable."
+      "hint": "The master password is not stored anywhere. You are asked once, the first time a saved password is needed after the app starts, and it is remembered until the app closes. They are stored in secrets.json in the app data folder (next to the executable on Windows, ~/Library/Application Support/com.toy.terminal on macOS)."
     },
     "general": {
       "heading": "General",
@@ -322,7 +322,7 @@
       "systemPlaceholder": "e.g. Always answer in English and tell me when sudo is needed",
       "hint": "Enter the address of a server that provides an OpenAI-compatible API (/v1/chat/completions). Ending at /v1 is enough. The API key is stored as plain text in settings.json, so do not enter it on a shared PC. Your conversation and any attached terminal output are sent to this server. The AI only suggests commands; you run them yourself (Enter).",
       "log": "Save the conversation to files in the logs folder",
-      "logHint": "When on, one file per day (ai-DATE.jsonl) is written to the logs folder next to the program, one line per question, answer and command typed in with [Type into terminal]. Attached terminal output is recorded after passwords and the like are masked. Files are not deleted automatically, so clean them up yourself when needed.",
+      "logHint": "When on, one file per day (ai-DATE.jsonl) is written to the logs folder in the app data folder (where secrets.json is), one line per question, answer and command typed in with [Type into terminal]. Attached terminal output is recorded after passwords and the like are masked. Files are not deleted automatically, so clean them up yourself when needed.",
       "exec": "Allow running commands on the SSH server",
       "tools": "Server supports tool calling (OpenAI tools)",
       "execOn": "Allow",

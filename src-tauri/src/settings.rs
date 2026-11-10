@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 /// 실행 파일과 같은 폴더의 settings.json. 내용(JSON)은 프론트가 소유하고 백엔드는 읽고 쓰기만 한다.
 fn path() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    Ok(exe.with_file_name("settings.json"))
+    crate::paths::data_path("settings.json")
 }
 
 #[tauri::command]

@@ -9,8 +9,7 @@ const KINDS: &[&str] = &["ai", "audit"];
 const MAX_LINE_BYTES: usize = 1024 * 1024;
 
 fn logs_dir() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    Ok(exe.with_file_name("logs"))
+    crate::paths::data_path("logs")
 }
 
 /// `YYYY-MM-DD` 모양인가 (숫자와 '-'만, 길이 10)

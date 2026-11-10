@@ -7,6 +7,7 @@ mod hostkeys;
 mod icons;
 mod llm;
 mod logs;
+mod paths;
 mod policy;
 mod redact;
 mod secrets;

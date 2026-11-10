@@ -31,8 +31,7 @@ pub fn judge(hosts: &Hosts, host_id: &str, fingerprint: &str) -> Verdict {
 }
 
 fn default_path() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    Ok(exe.with_file_name("known_hosts.json"))
+    crate::paths::data_path("known_hosts.json")
 }
 
 /// 파일이 없으면 빈 목록. 깨진 파일은 오류로 돌려준다 (조용히 비우면 지문 검증이 사라지기 때문).

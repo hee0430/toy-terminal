@@ -7,8 +7,7 @@ use std::time::Duration;
 const MAX_BYTES: usize = 1024 * 1024;
 
 fn dir() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 위치를 알 수 없습니다: {e}"))?;
-    Ok(exe.with_file_name("icons"))
+    crate::paths::data_path("icons")
 }
 
 /// (확장자, MIME). 지원하지 않는 형식이면 None.
