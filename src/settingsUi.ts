@@ -15,7 +15,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { refreshAi } from "./ai";
 import { APP_NAME, APP_VERSION } from "./version";
 
-export type Page = "general" | "colors" | "font" | "editor" | "ai" | "language" | "about";
+export type Page = "general" | "colors" | "font" | "editor" | "ai" | "language" | "help" | "about";
 const PAGES: { id: Page; key: string }[] = [
   { id: "general", key: "settings.menu.general" },
   { id: "colors", key: "settings.menu.colors" },
@@ -23,6 +23,7 @@ const PAGES: { id: Page; key: string }[] = [
   { id: "editor", key: "settings.menu.editor" },
   { id: "ai", key: "settings.menu.ai" },
   { id: "language", key: "settings.menu.language" },
+  { id: "help", key: "settings.menu.help" },
   { id: "about", key: "settings.menu.about" },
 ];
 
@@ -67,6 +68,7 @@ export function openSettings(start: Page = "general") {
     else if (page === "language") languagePage(pageEl, renderAll);
     else if (page === "editor") editorPage(pageEl);
     else if (page === "font") fontPage(pageEl);
+    else if (page === "help") helpPage(pageEl);
     else if (page === "about") aboutPage(pageEl);
     else if (page === "ai") aiPage(pageEl);
     else colorsPage(pageEl, renderPage);
@@ -214,6 +216,17 @@ function aiPage(root: HTMLElement) {
 }
 
 // ---------- 정보 ----------
+
+// ---------- 도움말 ----------
+
+/** 항목마다 제목(settings.help.<이름>.title)과 줄 단위 본문(settings.help.<이름>.body)을 보여 준다. */
+function helpPage(root: HTMLElement) {
+  for (const s of ["connect", "tabs", "terminal", "sidebar", "tools", "data"]) {
+    const ul = el("ul", "helplist");
+    for (const line of t(`settings.help.${s}.body`).split("\n")) ul.append(el("li", "", line));
+    root.append(el("h4", "", t(`settings.help.${s}.title`)), ul);
+  }
+}
 
 function aboutPage(root: HTMLElement) {
   const copy = el("button", "", t("settings.about.copy"));

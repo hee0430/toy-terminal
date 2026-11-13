@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // t(`a.${x}`)처럼 조립해서 쓰는 키의 앞부분. 여기 등록하면 그 아래 키는 "안 쓰는 키"로 보지 않는다.
-const DYNAMIC_PREFIXES = ["settings.ansi.", "settings.colors.filter."];
+const DYNAMIC_PREFIXES = ["settings.ansi.", "settings.colors.filter.", "settings.help."];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const load = (f) => JSON.parse(readFileSync(join(root, "src", "messages", f), "utf8"));

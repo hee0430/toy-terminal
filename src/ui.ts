@@ -64,6 +64,23 @@ export function confirmBox(message: string, okLabel = t("common.delete")): Promi
   });
 }
 
+/** 접속 중임을 알리고 다른 조작을 막는 모달. Esc로는 닫히지 않고, 취소 버튼을 누르면 onCancel을 부른다. 돌려준 함수로 닫는다. */
+export function showConnecting(name: string, onCancel: () => void): () => void {
+  const dlg = modal((d) => {
+    d.classList.add("connectingdlg");
+    d.innerHTML = `<form method="dialog"><div class="spinner"></div><p class="msg"></p>
+      <div class="row"><button type="button" class="cancel"></button></div></form>`;
+    d.querySelector(".msg")!.textContent = t("connect.progress", { name });
+    d.querySelector(".cancel")!.textContent = t("common.cancel");
+    d.addEventListener("cancel", (e) => e.preventDefault()); // Esc
+    d.querySelector(".cancel")!.addEventListener("click", () => {
+      d.close();
+      onCancel();
+    });
+  });
+  return () => dlg.open && dlg.close();
+}
+
 /** 여러 선택지 중 하나. 줄은 본문(한 줄씩), 닫거나 Esc면 첫 번째가 아니라 cancelValue를 돌려준다. */
 export function choose(
   title: string,

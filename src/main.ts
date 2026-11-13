@@ -11,7 +11,7 @@ import "@xterm/xterm/css/xterm.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./fonts.css";
 import "./style.css";
-import { ask, choose, confirmBox, shieldIcon, showMenu } from "./ui";
+import { ask, choose, confirmBox, shieldIcon, showConnecting, showMenu } from "./ui";
 import { initProfiles, rerenderProfiles, showStatus, type Profile } from "./profiles";
 import { parseForward } from "./sshForward";
 import { hasSecret, readSecret } from "./vault";
@@ -26,6 +26,7 @@ import { applyFont, ensureFontLoaded, getTermFont, onScrollback, onTermFont } fr
 import { clampSize } from "./fonts";
 import { sanitizePaste } from "./paste";
 import { closeChat, initAi, refreshAi } from "./ai";
+import { createPendingOutput } from "./pendingOutput";
 
 type Tab = {
   id: string;
@@ -64,6 +65,8 @@ let active: Tab | null = null;
 // ---------- 터미널 / 탭 ----------
 
 const b64ToBytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+/** 접속을 시작하고 탭이 등록되기 전에 온 출력(첫 프롬프트 등)을 잠시 모아 둔다. */
+const pending = createPendingOutput();
 
 /** 붙여넣기. 줄바꿈이 있으면 줄마다 명령이 실행될 수 있으므로 먼저 물어본다. */
 async function pasteText(term: Terminal, raw: string) {
@@ -142,7 +145,7 @@ async function createTab(
   icon?: ProfileIcon,
   context = "",
   profile?: Profile,
-) {
+): Promise<Tab> {
   // 백엔드가 id를 돌려주기 전에 크기를 알아야 하므로, 먼저 DOM에 붙여서 fit 한다.
   const el = document.createElement("div");
   el.className = "term";
@@ -176,9 +179,11 @@ async function createTab(
   fit.fit();
 
   let id: string;
+  pending.begin();
   try {
     id = await start(term.cols, term.rows);
   } catch (e) {
+    pending.end();
     el.remove();
     term.dispose();
     throw e;
@@ -232,7 +237,13 @@ async function createTab(
     for (const x of targets) invoke("term_write", { id: x.id, data: d }).catch(() => {});
   });
   term.onResize(({ cols, rows }) => invoke("term_resize", { id, cols, rows }).catch(() => {}));
+  // 탭이 등록되기 전에 도착해 모아 둔 출력을 먼저 쓴다.
+  const early = pending.take(id);
+  pending.end();
+  early?.chunks.forEach((c) => writeOutput(tab, c));
+  if (early?.closed) markClosed(tab);
   activate(tab);
+  return tab;
 }
 
 // ---------- 터미널 내 검색 ----------
@@ -422,6 +433,7 @@ function tabMenu(e: MouseEvent, tab: Tab) {
     if (group.length < MAX_SPLIT) items.push({ label: t("tab.splitFlip"), fn: () => ((splitRows = !splitRows), applyLayout()) });
   }
   if (items.length > groupStart) items[groupStart].sep = true; // 분할 항목은 구분선 아래에
+  items.push({ label: t("tab.closeAll"), fn: closeAllTabs, sep: true }); // 되돌릴 수 없는 동작이라 따로 구분한다
   showMenu(e.clientX, e.clientY, items);
 }
 
@@ -568,6 +580,17 @@ async function requestClose(tab: Tab) {
   closeTab(tab);
 }
 
+/** 모든 탭을 닫는다. 실행 중인 세션이 있으면 개수를 알리고 한 번만 확인한다. */
+async function closeAllTabs() {
+  const all = [...tabs.values()];
+  const live = all.filter((x) => !x.dead).length;
+  if (live && !(await confirmBox(t("tab.closeAllConfirm", { count: live }), t("common.close")))) {
+    active?.term.focus();
+    return;
+  }
+  for (const x of all) await closeTab(x);
+}
+
 async function closeTab(tab: Tab) {
   await invoke("term_close", { id: tab.id }).catch(() => {});
   tab.term.dispose();
@@ -589,19 +612,26 @@ async function closeTab(tab: Tab) {
   } else applyLayout(); // 보고 있던 묶음에서 한 칸이 빠졌을 수 있다
 }
 
-listen<{ id: string; data: string }>("term-output", (e) => {
-  const tab = tabs.get(e.payload.id);
-  if (!tab) return;
-  tab.term.write(b64ToBytes(e.payload.data));
+function writeOutput(tab: Tab, bytes: Uint8Array) {
+  tab.term.write(bytes);
   if (!visibleTabs().includes(tab)) tab.tabEl.classList.add("unread"); // 화면에 보이지 않는 탭의 새 출력
-});
-listen<string>("term-closed", (e) => {
-  const tab = tabs.get(e.payload);
-  if (!tab) return;
+}
+function markClosed(tab: Tab) {
   tab.dead = true;
   tab.tabEl.classList.add("dead");
   if (!visibleTabs().includes(tab)) tab.tabEl.classList.add("unread");
   tab.term.write(`\r\n\x1b[90m${t("tab.ended")}\x1b[0m\r\n`);
+}
+listen<{ id: string; data: string }>("term-output", (e) => {
+  const bytes = b64ToBytes(e.payload.data);
+  const tab = tabs.get(e.payload.id);
+  if (tab) writeOutput(tab, bytes);
+  else pending.add(e.payload.id, bytes);
+});
+listen<string>("term-closed", (e) => {
+  const tab = tabs.get(e.payload);
+  if (tab) markClosed(tab);
+  else pending.close(e.payload);
 });
 
 // 탭이 창보다 많으면 스크롤 막대 대신 양끝의 ‹ › 버튼(한 번에 탭 하나)이나 마우스 휠로 좌우로 넘긴다.
@@ -740,7 +770,17 @@ function showPane(pane: Pane) {
   document.querySelectorAll<HTMLElement>(".stab").forEach((b) => b.classList.toggle("active", b.dataset.pane === pane));
   if (pane === "sftp" && active) refreshSftp(active.follow && active.cwd ? active.cwd : active.sftpPath || "");
 }
-document.querySelectorAll<HTMLElement>(".stab").forEach((b) => b.addEventListener("click", () => showPane(b.dataset.pane as Pane)));
+// 세로 탭을 누르면 그 패널을 보여 준다. 이미 보고 있는 탭을 다시 누르면 패널을 접고, 접힌 상태에서 누르면 펼친다.
+document.querySelectorAll<HTMLElement>(".stab").forEach((b) =>
+  b.addEventListener("click", () => {
+    const collapsed = document.body.classList.contains("side-collapsed");
+    if (!collapsed && b.classList.contains("active")) document.body.classList.add("side-collapsed");
+    else {
+      document.body.classList.remove("side-collapsed");
+      showPane(b.dataset.pane as Pane);
+    }
+  }),
+);
 
 // ---- 터미널 위치 따라가기 ----
 
@@ -1224,12 +1264,40 @@ async function askHop(p: Profile): Promise<SshHop | null> {
   return { host: p.host ?? "", port: p.port ?? 22, user, password, key_path: useKey ? (p.key_path ?? null) : null, passphrase };
 }
 
+/** 접속 시도를 '접속 중' 모달로 감싼다. 취소하면 null을 돌려주고, 취소 뒤에 늦게 성공한 탭은 닫는다. */
+function withConnecting(name: string, run: () => Promise<Tab>): Promise<Tab | null> {
+  return new Promise((resolve, reject) => {
+    let cancelled = false;
+    const close = showConnecting(name, () => {
+      cancelled = true;
+      resolve(null);
+    });
+    run().then(
+      (tab) => {
+        close();
+        if (cancelled) void closeTab(tab);
+        else resolve(tab);
+      },
+      (e) => {
+        close();
+        if (!cancelled) reject(e);
+      },
+    );
+  });
+}
+
+let connecting = false; // 접속 중에 같은 접속을 또 시작하지 못하게 한다
+
 async function connectProfile(p: Profile) {
+  if (connecting) return;
+  connecting = true;
   showStatus("");
   try {
     if (p.kind !== "ssh") {
-      if (p.admin) showStatus(t("connect.uac"));
-      await openLocalTab(p.name, p.kind, !!p.admin, p.icon, p);
+      if (p.admin) {
+        showStatus(t("connect.uac"));
+        await withConnecting(p.name, () => openLocalTab(p.name, p.kind, true, p.icon, p));
+      } else await openLocalTab(p.name, p.kind, false, p.icon, p);
       showStatus("");
       return;
     }
@@ -1248,7 +1316,7 @@ async function connectProfile(p: Profile) {
       );
     for (;;) {
       try {
-        await open();
+        await withConnecting(p.name, open);
         break;
       } catch (e) {
         // 키에 암호가 걸려 있을 때만 그 암호를 묻고 다시 시도한다 (암호 없는 키는 묻지 않는다).
@@ -1267,6 +1335,8 @@ async function connectProfile(p: Profile) {
     showStatus("");
   } catch (e) {
     showStatus(t("connect.failed", { error: String(e) }));
+  } finally {
+    connecting = false;
   }
 }
 

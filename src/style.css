@@ -85,7 +85,7 @@ body.dragging-tab { user-select: none; cursor: grabbing; }
 /* 사이드바: 왼쪽 세로 탭 + 선택된 패널 하나 */
 #sidebar { display: flex; background: var(--panel); border-right: 1px solid var(--line); }
 #sidetabs { display: flex; flex-direction: column; width: 26px; background: var(--side); border-right: 1px solid var(--line); }
-.stab { writing-mode: vertical-rl; padding: 12px 4px; border: 0; border-radius: 0; background: transparent; opacity: .65; }
+.stab { writing-mode: vertical-rl; min-height: 58px; /* SFTP 탭 높이에 맞춘다 */ text-align: center; padding: 12px 4px; border: 0; border-radius: 0; background: transparent; opacity: .65; }
 .stab:hover { background: var(--hover); opacity: 1; }
 .stab.active { background: var(--panel); opacity: 1; box-shadow: inset -2px 0 0 var(--accent); }
 .stab[hidden] { display: none; }
@@ -146,6 +146,7 @@ dialog.aipreview { width: 520px; max-width: 92vw; }
 dialog.aipreview textarea { width: 100%; height: 260px; resize: none; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: 12px/1.5 "Cascadia Mono", Consolas, monospace; }
 .aisystem { width: 100%; height: 90px; resize: none; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; flex: none; }
 /* 사이드바와 터미널 사이의 경계. 끌어서 사이드바 폭을 바꾼다. */
+body.side-collapsed .spane, body.side-collapsed #splitter { display: none; } /* 세로 탭만 남기고 패널을 접는다 */
 #splitter { width: 5px; flex: none; cursor: col-resize; margin: 0 -2px; z-index: 5; background: transparent; transition: background .1s; }
 #splitter:hover, body.resizing #splitter { background: var(--accent); opacity: .6; }
 body.resizing { user-select: none; cursor: col-resize; }
@@ -177,6 +178,9 @@ body.resizing { user-select: none; cursor: col-resize; }
 
 dialog { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; width: 380px; }
 dialog::backdrop { background: #0008; }
+dialog.connectingdlg { width: 300px; text-align: center; }
+dialog.connectingdlg .spinner { width: 28px; height: 28px; margin: 6px auto 0; border: 3px solid var(--line); border-top-color: var(--fg); border-radius: 50%; animation: connspin .9s linear infinite; }
+@keyframes connspin { to { transform: rotate(360deg); } }
 dialog label { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; gap: 8px; }
 dialog input { width: 220px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 5px; }
 dialog select { width: 220px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 5px; }
@@ -260,6 +264,7 @@ dialog.settings[open] { display: flex; flex-direction: column; }
 .smenu button.active { background: var(--panel); box-shadow: inset 3px 0 0 var(--accent); }
 .spage { flex: 1; min-width: 0; padding: 14px 18px; overflow-y: auto; display: flex; flex-direction: column; }
 .spage h4 { margin: 0 0 12px; font-size: 14px; }
+.spage .helplist { margin: -4px 0 16px; padding-left: 18px; font-size: 12.5px; line-height: 1.6; opacity: .85; }
 .fontrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0; }
 .fontrow input { width: 220px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 5px; }
 /* 높이는 줄 수(rows)로 정해 내용에 딱 맞게 고정한다. 크기 조절과 스크롤은 막는다. */

@@ -39,6 +39,8 @@
     "broadcastOn": "Turn on broadcast input (type into all split sessions)",
     "broadcastOff": "Turn off broadcast input",
     "rename": "Rename",
+    "closeAll": "Close all tabs",
+    "closeAllConfirm": "Close all tabs? {count} running session(s) will end.",
     "reconnect": "Reconnect",
     "renameTitle": "Rename tab",
     "renameLabel": "Name",
@@ -123,6 +125,7 @@
   "connect": {
     "uac": "Waiting for UAC approval...",
     "connecting": "Connecting...",
+    "progress": "Connecting to {name}...",
     "keyPassTitle": "Key passphrase",
     "keyPassLabel": "The key file for {name} has a passphrase. Enter it",
     "userTitle": "Account",
@@ -226,8 +229,35 @@
       "font": "Font",
       "editor": "Editor",
       "language": "Language",
+      "help": "Help",
       "about": "About",
       "ai": "AI"
+    },
+    "help": {
+      "connect": {
+        "title": "Connecting",
+        "body": "Double-click a session in the list to connect. You can cancel while connecting.\nPasswords can be saved encrypted with a master password, and key-file authentication is supported.\nFor a disconnected tab, right-click > Reconnect reopens the same session."
+      },
+      "tabs": {
+        "title": "Tabs and split view",
+        "body": "Right-click a tab to rename it, use split view or simultaneous input, or close all tabs.\nDrag tabs to reorder them.\nSplit view holds up to 4 sessions; drag the borders to resize."
+      },
+      "terminal": {
+        "title": "Terminal",
+        "body": "Ctrl+F: search in the terminal\nCtrl+mouse wheel: change the font size\nSelecting with the mouse copies, and right-click pastes. Multi-line pastes ask for confirmation first."
+      },
+      "sidebar": {
+        "title": "Left panel",
+        "body": "Click the active vertical tab (Sessions, SFTP, AI) again to collapse the panel; click any tab to expand it.\nDrag the panel border to resize it, or double-click it to restore the default width."
+      },
+      "tools": {
+        "title": "SFTP and AI assistant",
+        "body": "SFTP works only in SSH tabs; drag files from Explorer to upload.\nThe AI assistant needs an OpenAI-compatible server connected in Settings > AI. Your questions and terminal content are sent to that server."
+      },
+      "data": {
+        "title": "Stored files",
+        "body": "Stored next to the executable on Windows, and in ~/Library/Application Support/com.toy.terminal on macOS.\nprofiles.json (sessions), settings.json (settings), known_hosts.json (server fingerprints), secrets.json (encrypted passwords)\nThe master password is stored nowhere, so it cannot be recovered if forgotten."
+      }
     },
     "about": {
       "version": "Version",

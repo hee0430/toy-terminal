@@ -39,6 +39,8 @@
     "broadcastOn": "동시 입력 켜기 (묶인 모든 세션에 입력)",
     "broadcastOff": "동시 입력 끄기",
     "rename": "이름 바꾸기",
+    "closeAll": "모든 탭 닫기",
+    "closeAllConfirm": "모든 탭을 닫을까요? 실행 중인 세션 {count}개가 종료됩니다.",
     "reconnect": "다시 연결",
     "renameTitle": "탭 이름 바꾸기",
     "renameLabel": "이름",
@@ -123,6 +125,7 @@
   "connect": {
     "uac": "UAC 승인 대기 중...",
     "connecting": "연결 중...",
+    "progress": "{name}에 접속하는 중입니다...",
     "keyPassTitle": "키 암호",
     "keyPassLabel": "{name} 키 파일에 암호가 설정되어 있습니다. 키 암호를 입력하세요",
     "userTitle": "계정",
@@ -226,8 +229,35 @@
       "font": "글꼴",
       "editor": "편집기",
       "language": "언어",
+      "help": "도움말",
       "about": "정보",
       "ai": "AI"
+    },
+    "help": {
+      "connect": {
+        "title": "접속",
+        "body": "세션 목록에서 세션을 더블클릭하면 접속합니다. 접속 중에는 취소할 수 있습니다.\n비밀번호는 마스터 비밀번호로 암호화해 저장할 수 있고, 키 파일 인증도 쓸 수 있습니다.\n끊어진 탭은 우클릭 > 다시 연결로 같은 세션을 다시 엽니다."
+      },
+      "tabs": {
+        "title": "탭과 분할 화면",
+        "body": "탭을 우클릭하면 이름 바꾸기, 분할 화면, 동시 입력, 모든 탭 닫기를 쓸 수 있습니다.\n탭을 끌어서 순서를 바꿉니다.\n분할 화면은 최대 4개이고, 경계를 끌어 크기를 조절합니다."
+      },
+      "terminal": {
+        "title": "터미널",
+        "body": "Ctrl+F: 터미널 안에서 검색\nCtrl+마우스 휠: 글꼴 크기 조절\n드래그로 선택하면 복사되고, 우클릭하면 붙여넣습니다. 여러 줄을 붙여넣을 때는 먼저 확인을 받습니다."
+      },
+      "sidebar": {
+        "title": "왼쪽 패널",
+        "body": "세로 탭(세션, SFTP, AI)을 다시 누르면 패널이 접히고, 접힌 상태에서 누르면 펼쳐집니다.\n패널 경계를 끌면 폭이 바뀌고, 더블클릭하면 기본 폭으로 돌아갑니다."
+      },
+      "tools": {
+        "title": "SFTP와 AI 도우미",
+        "body": "SFTP는 SSH 탭에서만 쓸 수 있고, 탐색기에서 파일을 끌어 놓아 올립니다.\nAI 도우미는 설정 > AI에서 OpenAI 호환 서버를 연결해야 쓸 수 있습니다. 질문과 터미널 내용은 그 서버로 전송됩니다."
+      },
+      "data": {
+        "title": "저장되는 파일",
+        "body": "Windows는 실행 파일과 같은 폴더에, macOS는 ~/Library/Application Support/com.toy.terminal에 저장됩니다.\nprofiles.json(세션 목록), settings.json(설정), known_hosts.json(서버 지문), secrets.json(암호화한 비밀번호)\n마스터 비밀번호는 어디에도 저장되지 않아서 잊으면 복구할 수 없습니다."
+      }
     },
     "about": {
       "version": "버전",
