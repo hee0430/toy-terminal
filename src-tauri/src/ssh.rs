@@ -129,14 +129,17 @@ pub struct Forward {
     pub all: bool,
 }
 
-/// -L: 127.0.0.1(all이면 0.0.0.0)에서 기다리다가 들어온 연결마다 서버를 거쳐 목적지로 이어 준다. 열지 못하면(포트 사용 중 등) 오류.
-async fn start_local_forward(handle: Arc<Handle<Client>>, f: &Forward) -> Result<tauri::async_runtime::JoinHandle<()>, String> {
+/// -L: 127.0.0.1(all이면 0.0.0.0)에서 기다리다가 들어온 연결마다 서버를 거쳐 목적지로 이어 준다.
+/// 포트가 이미 사용 중이면(같은 프로필을 여러 번 연 경우 등) 접속을 막지 않고 None으로 건너뛴다. 그 밖의 오류는 실패.
+async fn start_local_forward(handle: Arc<Handle<Client>>, f: &Forward) -> Result<Option<tauri::async_runtime::JoinHandle<()>>, String> {
     let bind_addr = if f.all { "0.0.0.0" } else { "127.0.0.1" };
-    let listener = tokio::net::TcpListener::bind((bind_addr, f.listen_port))
-        .await
-        .map_err(|e| format!("로컬 포트 {}을(를) 열 수 없습니다 (이미 사용 중일 수 있습니다): {e}", f.listen_port))?;
+    let listener = match tokio::net::TcpListener::bind((bind_addr, f.listen_port)).await {
+        Ok(l) => l,
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => return Ok(None),
+        Err(e) => return Err(format!("로컬 포트 {}을(를) 열 수 없습니다: {e}", f.listen_port)),
+    };
     let (host, port) = (f.host.clone(), f.port);
-    Ok(tauri::async_runtime::spawn(async move {
+    Ok(Some(tauri::async_runtime::spawn(async move {
         loop {
             let Ok((mut sock, peer)) = listener.accept().await else { break };
             let (handle, host) = (handle.clone(), host.clone());
@@ -146,7 +149,7 @@ async fn start_local_forward(handle: Arc<Handle<Client>>, f: &Forward) -> Result
                 let _ = tokio::io::copy_bidirectional(&mut sock, &mut stream).await;
             });
         }
-    }))
+    })))
 }
 
 #[tauri::command]
@@ -161,13 +164,17 @@ pub async fn open_ssh(
 
     // 포워딩을 먼저 연다. 하나라도 실패하면 접속 전체를 실패로 알린다 (이미 연 것은 태스크가 drop되며 멈춘다).
     let mut tasks = Vec::new();
+    let mut skipped_ports = Vec::new();
     let result: Result<(), String> = async {
         for f in &params.forwards {
             if f.remote {
                 handle.tcpip_forward("127.0.0.1", f.listen_port as u32).await.map_err(|e| format!("서버가 원격 포트 {} 포워딩을 거절했습니다: {e}", f.listen_port))?;
                 remote_forwards.lock().unwrap().insert(f.listen_port as u32, (f.host.clone(), f.port));
             } else {
-                tasks.push(start_local_forward(handle.clone(), f).await?);
+                match start_local_forward(handle.clone(), f).await? {
+                    Some(t) => tasks.push(t),
+                    None => skipped_ports.push(f.listen_port),
+                }
             }
         }
         Ok(())
@@ -192,6 +199,11 @@ pub async fn open_ssh(
         .lock()
         .unwrap()
         .insert(id.clone(), Session::Ssh(SshSession { tx, handle, tasks }));
+
+    if !skipped_ports.is_empty() {
+        let ports = skipped_ports.iter().map(u16::to_string).collect::<Vec<_>>().join(", ");
+        emit_output(&app, &id, format!("\x1b[33m[ToyTerm] 로컬 포트 {ports}이(가) 이미 사용 중이라 포워딩을 건너뛰었습니다.\x1b[0m\r\n").as_bytes());
+    }
 
     let (app2, id2) = (app.clone(), id.clone());
     tauri::async_runtime::spawn(async move {
