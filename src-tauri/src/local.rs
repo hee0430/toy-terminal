@@ -40,6 +40,17 @@ fn default_shell() -> String {
     "powershell.exe".into()
 }
 
+/// 셸에 줄 환경변수. Finder로 연 앱은 TERM·LANG이 비어 있어, TERM이 없으면 zsh가 커서 이동을 못 해
+/// 글자가 겹쳐 보이고 한글이 `?`로 나온다. `is_set`은 해당 변수가 이미 있는지 알려 준다.
+#[cfg_attr(windows, allow(dead_code))]
+fn term_env(is_set: impl Fn(&str) -> bool) -> Vec<(&'static str, &'static str)> {
+    let mut env = vec![("TERM", "xterm-256color"), ("COLORTERM", "truecolor")];
+    if !["LANG", "LC_ALL", "LC_CTYPE"].iter().any(|k| is_set(k)) {
+        env.push(("LANG", "en_US.UTF-8"));
+    }
+    env
+}
+
 fn program_for(shell: &str) -> String {
     match shell {
         "pwsh" => "pwsh.exe".into(),
@@ -60,6 +71,10 @@ pub fn spawn(shell: &str, cols: u16, rows: u16) -> Result<(PtySession, Box<dyn R
         .map_err(|e| e.to_string())?;
 
     let mut cmd = CommandBuilder::new(&program);
+    #[cfg(not(windows))]
+    for (k, v) in term_env(|k| std::env::var_os(k).is_some_and(|v| !v.is_empty())) {
+        cmd.env(k, v);
+    }
     // 로그인 셸로 띄워야 Finder에서 연 앱에서도 터미널.앱처럼 PATH가 잡힌다.
     #[cfg(not(windows))]
     if shell == "shell" {
@@ -110,6 +125,16 @@ pub fn open_local(
 #[cfg(test)]
 mod tests {
     use super::program_for;
+
+    #[test]
+    fn 셸_환경변수는_term을_항상_넣고_lang은_비었을_때만_넣는다() {
+        let none = super::term_env(|_| false);
+        assert!(none.contains(&("TERM", "xterm-256color")));
+        assert!(none.contains(&("LANG", "en_US.UTF-8")));
+        let has_lang = super::term_env(|k| k == "LC_ALL");
+        assert!(has_lang.contains(&("TERM", "xterm-256color")));
+        assert!(!has_lang.iter().any(|(k, _)| *k == "LANG"));
+    }
 
     #[test]
     fn 셸_이름을_실행_파일로_바꾼다() {
