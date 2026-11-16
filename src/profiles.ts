@@ -124,6 +124,34 @@ function countProfiles(f: Folder): number {
   return f.children.reduce((s, c) => s + (c.type === "folder" ? countProfiles(c) : 1), 0);
 }
 
+/** 아이콘 파일을 쓰는 세션 수 */
+function iconUsers(file: string): number {
+  let n = 0;
+  walkProfiles(root, (p) => {
+    if (p.icon?.type === "file" && p.icon.file === file) n++;
+  });
+  return n;
+}
+
+/** 아이콘 파일을 쓰는 세션들의 아이콘을 비워 기본값으로 돌리고 저장한다 */
+function releaseIcon(file: string) {
+  let changed = false;
+  walkProfiles(root, (p) => {
+    if (p.icon?.type === "file" && p.icon.file === file) {
+      delete p.icon;
+      changed = true;
+    }
+  });
+  if (changed) persist();
+}
+
+function walkProfiles(f: Folder, fn: (p: Profile) => void) {
+  for (const c of f.children) {
+    if (c.type === "folder") walkProfiles(c, fn);
+    else fn(c);
+  }
+}
+
 // ---------- 저장 / 불러오기 ----------
 
 function persist() {
@@ -301,9 +329,11 @@ function editProfile(p?: Profile): Promise<EditResult | null> {
       f("kind").addEventListener("change", sync);
       f("use_key").addEventListener("change", syncKey);
       d.querySelector(".ico-change")!.addEventListener("click", async () => {
-        const r = await pickIcon();
+        const r = await pickIcon({ usage: iconUsers, release: releaseIcon });
         if (!r) return;
-        icon = r.icon ?? undefined;
+        if (r.icon !== undefined) icon = r.icon ?? undefined;
+        // 이 창이 들고 있던 아이콘을 선택 창에서 지웠다면 함께 비운다.
+        if (icon?.type === "file" && r.deleted.includes(icon.file)) icon = undefined;
         refreshIcon();
       });
       d.querySelector(".browse")!.addEventListener("click", async () => {

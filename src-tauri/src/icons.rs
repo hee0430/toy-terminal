@@ -76,13 +76,57 @@ pub async fn icon_download(url: String) -> Result<String, String> {
     }
     let (ext, _) = sniff(&bytes).ok_or("지원하지 않는 형식입니다 (png, jpg, gif, webp, ico만 가능, SVG 불가)")?;
 
-    let mut rnd = [0u8; 8];
-    getrandom::fill(&mut rnd).map_err(|e| e.to_string())?;
-    let name = format!("{}.{ext}", rnd.iter().map(|b| format!("{b:02x}")).collect::<String>());
+    let name = content_name(&bytes, ext);
     let dir = dir()?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("icons 폴더를 만들 수 없습니다: {e}"))?;
-    std::fs::write(dir.join(&name), &bytes).map_err(|e| format!("아이콘을 저장할 수 없습니다: {e}"))?;
+    let path = dir.join(&name);
+    // 같은 이미지는 같은 이름이므로 이미 있으면 다시 쓰지 않는다.
+    if !path.exists() {
+        std::fs::write(&path, &bytes).map_err(|e| format!("아이콘을 저장할 수 없습니다: {e}"))?;
+    }
     Ok(name)
+}
+
+/// 이미지 내용의 SHA-256 앞 16자리 + 확장자. 같은 내용은 몇 번을 받아도 같은 이름이 된다.
+fn content_name(bytes: &[u8], ext: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let hash: String = Sha256::digest(bytes).iter().take(8).map(|b| format!("{b:02x}")).collect();
+    format!("{hash}.{ext}")
+}
+
+/// 저장된 아이콘 파일 이름들. 최근에 받은 것이 앞에 온다. 이미지가 아니거나 이름이 올바르지 않은 파일은 뺀다.
+#[tauri::command]
+pub fn icon_list() -> Result<Vec<String>, String> {
+    let Ok(rd) = std::fs::read_dir(dir()?) else {
+        return Ok(vec![]); // 폴더가 아직 없으면 받은 아이콘이 없는 것
+    };
+    let mut files: Vec<(std::time::SystemTime, String)> = rd
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().into_string().ok()?;
+            if !valid_file_name(&name) {
+                return None;
+            }
+            let mut head = [0u8; 12];
+            let n = std::io::Read::read(&mut std::fs::File::open(e.path()).ok()?, &mut head).ok()?;
+            sniff(&head[..n])?;
+            Some((e.metadata().ok()?.modified().ok()?, name))
+        })
+        .collect();
+    files.sort_by(|a, b| b.0.cmp(&a.0));
+    Ok(files.into_iter().map(|(_, n)| n).collect())
+}
+
+/// 저장된 아이콘 파일을 지운다. 이 아이콘을 쓰는 세션 정리는 화면이 먼저 한다.
+#[tauri::command]
+pub fn icon_delete(file: String) -> Result<(), String> {
+    if !valid_file_name(&file) {
+        return Err("올바르지 않은 아이콘 파일 이름입니다".into());
+    }
+    match std::fs::remove_file(dir()?.join(&file)) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(format!("아이콘을 지울 수 없습니다 ({file}): {e}")),
+        _ => Ok(()),
+    }
 }
 
 /// 저장된 아이콘을 `data:` URL로 읽는다.
@@ -110,6 +154,14 @@ mod tests {
         assert!(sniff(b"<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>").is_none());
         assert!(sniff(b"<html><script>alert(1)</script>").is_none());
         assert!(sniff(b"").is_none());
+    }
+
+    #[test]
+    fn same_content_gets_same_name() {
+        let a = content_name(b"abc", "png");
+        assert_eq!(a, content_name(b"abc", "png"));
+        assert_ne!(a, content_name(b"abd", "png"));
+        assert!(valid_file_name(&a));
     }
 
     #[test]

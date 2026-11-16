@@ -41,7 +41,8 @@ body { background: var(--bg); color: var(--fg); font: 13px "Segoe UI", sans-seri
 .tab .tname { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .tab .shield { flex: none; }
 .tab.unread .label::after { content: ""; flex: none; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--accent); }
-.tab.active { background: var(--bg); border-bottom: 2px solid var(--accent); }
+.tab.active { background: color-mix(in srgb, var(--accent) 28%, var(--bg)); border-bottom: 3px solid var(--accent); font-weight: 600; }
+.tab:not(.active) .label { opacity: .7; } /* 탭 전체가 아니라 글씨만 흐리게: 동시 입력(bcast) 색 표시는 그대로 보이게 */
 .tab .x { opacity: .5; padding: 0 4px; border-radius: 3px; }
 .tab .x:hover { opacity: 1; background: var(--hover2); }
 .tab.dead .label { text-decoration: line-through; opacity: .6; }
@@ -231,6 +232,13 @@ dialog.iconpick { width: 520px; max-width: 92vw; }
 .igrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; max-height: 280px; overflow-y: auto; margin: 8px 0; }
 .icell { padding: 8px 0; font-size: 16px; }
 .more { display: block; margin: 0 auto 4px; }
+/* 받은 아이콘: 칸마다 오른쪽 위에 지우기 버튼 */
+.isaved { position: relative; }
+.isaved .icell { width: 100%; }
+.isaved .ico-img { width: 28px; height: 28px; }
+.idel { position: absolute; top: 0; right: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0 4px 0 4px; font-size: 8px; line-height: 12px; opacity: 0; }
+.isaved:hover .idel { opacity: .6; }
+.isaved .idel:hover { opacity: 1; background: var(--btn-red); }
 .urlrow { flex-direction: column; align-items: stretch !important; }
 .urlrow input { width: 100%; }
 

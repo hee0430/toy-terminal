@@ -366,7 +366,12 @@
   "icon": {
     "pickTitle": "Choose an icon",
     "tabBuiltin": "Built-in icons",
+    "tabSaved": "Saved icons",
     "tabUrl": "URL",
+    "savedEmpty": "No saved icons yet. You can download one in the URL tab.",
+    "delete": "Delete this icon file",
+    "deleteConfirm": "Delete this icon file?",
+    "deleteInUse": "{count} session(s) use this icon. If you delete it, they will switch to the default icon. Delete it?",
     "search": "Search icon names",
     "more": "Show more",
     "urlLabel": "Image URL",

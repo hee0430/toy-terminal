@@ -39,6 +39,9 @@ type Tab = {
   tabEl: HTMLElement;
   dead: boolean;
   sftpPath: string;
+  /** SFTP 폴더 이동 기록 (마우스 뒤로/앞으로 버튼용). 마지막 원소가 가장 최근 */
+  sftpBack: string[];
+  sftpFwd: string[];
   /** 셸이 OSC 7로 알려 준 마지막 작업 디렉터리 */
   cwd: string;
   /** SFTP 패널이 터미널 위치를 따라가는가 */
@@ -210,7 +213,7 @@ async function createTab(
   });
   $("#tabs").appendChild(tabEl);
 
-  const tab: Tab = { id, title, kind, term, fit, search, el, tabEl, dead: false, sftpPath: "", cwd: "", follow: false, hooked: false, pendingHook: false, typed: false, context, profile };
+  const tab: Tab = { id, title, kind, term, fit, search, el, tabEl, dead: false, sftpPath: "", sftpBack: [], sftpFwd: [], cwd: "", follow: false, hooked: false, pendingHook: false, typed: false, context, profile };
   tabs.set(id, tab);
   // 분할 화면에서 칸을 누르면 그 세션이 현재 세션이 된다.
   el.addEventListener("mousedown", () => active !== tab && activate(tab));
@@ -874,11 +877,16 @@ function flash(m: string, ms = 0) {
 const FLASH_MS = 4000;
 const fmtSize = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`);
 
-async function refreshSftp(path?: string) {
+/** 목록을 읽어 보여 준다. 성공하면 true. record가 true(기본)면 이전 폴더를 이동 기록에 남긴다 (같은 폴더 새로고침은 남기지 않는다). */
+async function refreshSftp(path?: string, record = true): Promise<boolean> {
   const tab = active;
-  if (!tab || tab.kind !== "ssh") return;
+  if (!tab || tab.kind !== "ssh") return false;
   try {
     const l = await invoke<Listing>("sftp_list", { id: tab.id, path: path ?? sftpPath.value });
+    if (record && tab.sftpPath && tab.sftpPath !== l.path) {
+      tab.sftpBack.push(tab.sftpPath);
+      tab.sftpFwd = [];
+    }
     tab.sftpPath = l.path;
     sftpPath.value = l.path;
     curEntries = l.entries;
@@ -910,10 +918,12 @@ async function refreshSftp(path?: string) {
           ev.preventDefault();
           if (!selected.has(i)) selectRow(i, new MouseEvent("click"));
           const items = [...selected].sort((a, b) => a - b).map((k) => curEntries[k]);
-          const menu: { label: string; fn: () => void }[] = [];
+          const menu: { label: string; fn: () => void; sep?: boolean }[] = [];
           if (items.length === 1 && isEditable(e)) menu.push({ label: t("sftp.menuEdit"), fn: () => editRemote(tab, full, e.name) });
           menu.push({ label: items.length > 1 ? t("sftp.downloadCount", { count: items.length }) : t("sftp.download"), fn: () => downloadItems(tab, items) });
           menu.push({ label: t("common.delete"), fn: () => removeEntries(tab, items) });
+          // 현재 보고 있는 경로에 만들거나 올린다 (선택한 항목과 무관)
+          menu.push({ label: t("sftp.mkdir"), fn: mkdirHere, sep: true }, { label: t("sftp.upload"), fn: uploadHere });
           showMenu(ev.clientX, ev.clientY, menu);
         });
         return li;
@@ -921,9 +931,24 @@ async function refreshSftp(path?: string) {
     );
     updateSelectionUi();
     flash(t("sftp.items", { count: l.entries.length }));
+    return true;
   } catch (e) {
     flash(t("sftp.error", { error: String(e) }));
+    return false;
   }
+}
+
+/** 이동 기록에서 한 칸 뒤(dir -1) 또는 앞(dir 1)으로. 폴더가 없어졌으면 기록을 되돌리고 제자리에 둔다. */
+async function sftpHistory(dir: -1 | 1) {
+  const tab = active;
+  if (!tab || tab.kind !== "ssh") return;
+  const from = dir < 0 ? tab.sftpBack : tab.sftpFwd;
+  const to = dir < 0 ? tab.sftpFwd : tab.sftpBack;
+  const p = from.pop();
+  if (!p) return;
+  const here = tab.sftpPath;
+  if (await refreshSftp(p, false)) to.push(here);
+  else from.push(p);
 }
 
 // ---- 파일 편집 (임시 폴더에 내려받아 편집기로 열고, 저장하면 자동 업로드) ----
@@ -1086,7 +1111,24 @@ $("#sftp-up").addEventListener("click", () => refreshSftp(parentPath(sftpPath.va
 $("#sftp-refresh").addEventListener("click", () => refreshSftp());
 sftpPath.addEventListener("keydown", (e) => e.key === "Enter" && refreshSftp());
 
-$("#sftp-upload").addEventListener("click", async () => {
+// 마우스 뒤로(3)/앞으로(4) 버튼과 Alt+←/→. SFTP 패널 위에 있을 때만 쓴다
+// (터미널에서는 vim 같은 프로그램과 readline이 이 입력을 쓸 수 있다).
+const historyButton = (b: number) => (b === 3 ? -1 : b === 4 ? 1 : 0);
+sftpEl.addEventListener("mousedown", (e) => historyButton(e.button) && e.preventDefault()); // 웹뷰 기본 이동 방지
+sftpEl.addEventListener("mouseup", (e) => {
+  const dir = historyButton(e.button);
+  if (!dir) return;
+  e.preventDefault();
+  sftpHistory(dir);
+});
+window.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || sftpEl.hidden || !sftpEl.matches(":hover")) return;
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  e.preventDefault();
+  sftpHistory(e.key === "ArrowLeft" ? -1 : 1);
+});
+
+async function uploadHere() {
   if (!active) return;
   const picked = await openDialog({ multiple: true });
   if (!picked) return;
@@ -1102,9 +1144,9 @@ $("#sftp-upload").addEventListener("click", async () => {
   }
   flash(t("sftp.uploaded"), FLASH_MS);
   refreshSftp();
-});
+}
 
-$("#sftp-mkdir").addEventListener("click", async () => {
+async function mkdirHere() {
   const name = await ask(t("sftp.mkdir"), t("sftp.mkdirLabel"));
   if (!name || !active) return;
   try {
@@ -1113,6 +1155,23 @@ $("#sftp-mkdir").addEventListener("click", async () => {
   } catch (e) {
     flash(t("sftp.error", { error: String(e) }));
   }
+}
+
+$("#sftp-upload").addEventListener("click", uploadHere);
+$("#sftp-mkdir").addEventListener("click", mkdirHere);
+
+// 빈 곳 우클릭: 파일 행 메뉴(위)와 같은 새 폴더/업로드. 행과 입력창은 각자 처리한다.
+sftpEl.addEventListener("contextmenu", (e) => {
+  if ((e.target as HTMLElement).closest("li, input, textarea, button") || !active || active.kind !== "ssh") return;
+  showMenu(e.clientX, e.clientY, [
+    { label: t("sftp.mkdir"), fn: mkdirHere },
+    { label: t("sftp.upload"), fn: uploadHere },
+  ]);
+});
+
+// 앱 메뉴가 없는 곳에서는 브라우저(WebView2) 기본 메뉴(뒤로, 인쇄, 검사 등)를 띄우지 않는다. 입력창은 복사/붙여넣기가 필요해 남긴다.
+document.addEventListener("contextmenu", (e) => {
+  if (!(e.target as HTMLElement).closest("input, textarea")) e.preventDefault();
 });
 
 // ---------- 탐색기에서 끌어다 놓아 업로드 ----------

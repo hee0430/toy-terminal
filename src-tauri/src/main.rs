@@ -132,6 +132,8 @@ fn main() {
             settings::settings_save,
             icons::icon_download,
             icons::icon_read,
+            icons::icon_list,
+            icons::icon_delete,
             local::open_local,
             admin::open_local_admin,
             ssh::open_ssh,
