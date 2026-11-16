@@ -83,6 +83,7 @@ fn wsl_args(shell: &str) -> Result<Vec<String>, String> {
 }
 
 /// `wsl.exe -l -q`의 출력(UTF-16LE)에서 쓸 수 있는 배포판 이름들. docker-desktop 계열은 셸로 쓸 수 없어 뺀다.
+#[cfg_attr(not(windows), allow(dead_code))] // Windows의 wsl_distros에서만 쓴다
 fn parse_wsl_list(out: &[u8]) -> Vec<String> {
     let units: Vec<u16> = out.chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
     String::from_utf16_lossy(&units)
