@@ -8,6 +8,12 @@
     "save": "저장",
     "confirm": "확인"
   },
+  "update": {
+    "available": "새 버전 {version}이(가) 있습니다. 지금 업데이트할까요? 설치하는 동안 앱이 다시 시작됩니다.",
+    "install": "업데이트",
+    "downloading": "업데이트를 내려받는 중...",
+    "failed": "업데이트하지 못했습니다: {error}"
+  },
   "window": {
     "minimize": "최소화",
     "maximize": "최대화",

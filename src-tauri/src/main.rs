@@ -99,6 +99,13 @@ async fn term_close(state: tauri::State<'_, AppState>, id: String) -> Result<(),
     Ok(())
 }
 
+/// 설치 프로그램으로 설치된 실행인가. 설치형은 exe 옆에 uninstall.exe가 있고 포터블 실행과 macOS에는 없다.
+/// 자동 업데이트는 설치형만 대상이다 (포터블이 설치 파일을 받아 다른 곳에 설치하는 일을 막는다).
+#[tauri::command]
+fn is_installed() -> bool {
+    std::env::current_exe().is_ok_and(|exe| exe.with_file_name("uninstall.exe").exists())
+}
+
 fn main() {
     // 관리자 도우미로 실행된 경우 창 없이 셸 중계만 하고 끝난다.
     let args: Vec<String> = std::env::args().collect();
@@ -111,12 +118,15 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(AppState::default())
         .manage(secrets::SecretsState::default())
         .invoke_handler(tauri::generate_handler![
             term_write,
             term_resize,
             term_close,
+            is_installed,
             profiles::profiles_load,
             profiles::profiles_save,
             profiles::ssh_config_load,

@@ -20,6 +20,7 @@ import { iconNode, type ProfileIcon } from "./icons";
 import { getSettings, loadSettings, updateSettings } from "./settings";
 import { clampSidebar, DEFAULT_SIDEBAR } from "./layout";
 import { APP_NAME, APP_VERSION } from "./version";
+import { checkForUpdate } from "./updater";
 import { applyAppearance, getTermTheme, onTermTheme } from "./theme";
 import { openSettings } from "./settingsUi";
 import { applyFont, ensureFontLoaded, getTermFont, onScrollback, onTermFont } from "./termFont";
@@ -695,6 +696,7 @@ $("#settings-btn").addEventListener("click", () => openSettings());
 // 세로 탭 맨 아래 버전 표시
 $("#appver").textContent = `v${APP_VERSION}`;
 $("#appver").title = `${APP_NAME} v${APP_VERSION}`;
+checkForUpdate(showStatus);
 
 // ---------- 사이드바 폭 조절 (경계를 끌면 바뀌고, 더블클릭하면 기본 폭) ----------
 

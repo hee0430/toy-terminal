@@ -1,7 +1,7 @@
 // 빌드 결과를 버전이 들어간 이름으로 release/ 폴더에 모은다. `npm run release`가 tauri build 뒤에 부른다.
 //  - 설치 파일(NSIS)은 Tauri가 이미 버전을 넣은 이름으로 만든다: ToyTerm_0.8.0_x64-setup.exe (MSI는 만들지 않는다)
 //  - 실행 파일(toyterm.exe)은 이름에 버전이 없어서 ToyTerm_0.8.0_x64_portable.exe 로 복사한다.
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,4 +26,21 @@ for (const [dir, ext] of [["nsis", ".exe"]]) {
   if (!files.length) throw new Error(`${dir} 설치 파일(버전 ${version})이 없습니다: ${folder}`);
   for (const f of files) copy(join(folder, f), f);
 }
+// 자동 업데이트용 latest.json. 앱이 이 파일을 읽어 새 버전이 있는지 보고, 설치 파일의 서명(.sig)으로 변조를 검증한다.
+// 릴리즈에 설치 파일과 같이 올리면 .../releases/latest/download/latest.json 주소로 받아진다 (tauri.conf.json의 endpoints).
+const setup = `ToyTerm_${version}_x64-setup.exe`;
+const sigPath = join(target, "bundle", "nsis", `${setup}.sig`);
+if (!existsSync(sigPath)) throw new Error(`서명 파일이 없습니다: ${sigPath} (TAURI_SIGNING_PRIVATE_KEY를 설정하고 빌드했는지 확인)`);
+const latest = {
+  version,
+  pub_date: new Date().toISOString(),
+  platforms: {
+    "windows-x86_64": {
+      signature: readFileSync(sigPath, "utf8").trim(),
+      url: `https://github.com/hee0430/toy-terminal/releases/download/v${version}/${setup}`,
+    },
+  },
+};
+writeFileSync(join(out, "latest.json"), JSON.stringify(latest, null, 2));
+copied.push("latest.json");
 console.log(`버전 ${version} 결과물을 ${out} 에 모았습니다:\n  ${copied.join("\n  ")}`);

@@ -8,6 +8,12 @@
     "save": "Save",
     "confirm": "OK"
   },
+  "update": {
+    "available": "Version {version} is available. Update now? The app restarts during the installation.",
+    "install": "Update",
+    "downloading": "Downloading the update...",
+    "failed": "Could not update: {error}"
+  },
   "window": {
     "minimize": "Minimize",
     "maximize": "Maximize",
