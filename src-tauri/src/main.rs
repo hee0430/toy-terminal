@@ -127,6 +127,7 @@ fn main() {
             term_resize,
             term_close,
             is_installed,
+            local::shell_status,
             profiles::profiles_load,
             profiles::profiles_save,
             profiles::ssh_config_load,

@@ -68,6 +68,7 @@
     "field": {
       "name": "Name",
       "kind": "Type",
+      "distro": "WSL distribution",
       "admin": "Run as administrator (UAC approval required)",
       "host": "Host",
       "port": "Port",

@@ -68,6 +68,7 @@
     "field": {
       "name": "이름",
       "kind": "종류",
+      "distro": "WSL 배포판",
       "admin": "관리자 권한으로 실행 (UAC 승인 필요)",
       "host": "호스트",
       "port": "포트",

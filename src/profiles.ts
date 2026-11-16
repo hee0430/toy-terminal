@@ -7,15 +7,17 @@ import { parseSshConfig } from "./sshConfig";
 import { parseForward, parseForwards, type Forward } from "./sshForward";
 import { deleteSecrets, hasSecret, saveSecret, vaultStatus } from "./vault";
 
-export type Kind = "pwsh" | "powershell" | "cmd" | "shell" | "ssh";
+export type Kind = "pwsh" | "powershell" | "cmd" | "wsl" | "shell" | "ssh";
 
 export type Profile = {
   id: string;
   type: "profile";
   name: string;
   kind: Kind;
-  // 로컬 셸 전용. true면 UAC 승인 후 관리자 권한으로 실행한다.
+  // 로컬 셸 전용. true면 UAC 승인 후 관리자 권한으로 실행한다. (WSL은 지원하지 않는다)
   admin?: boolean;
+  /** wsl 전용. 실행할 WSL 배포판 이름 (없으면 기본 배포판) */
+  distro?: string;
   // ssh 전용. 비밀번호는 이 파일에 쓰지 않는다 (저장하면 secrets.json에 마스터 비밀번호로 암호화해 둔다).
   host?: string;
   port?: number;
@@ -34,10 +36,21 @@ export type TreeNode = Profile | Folder;
 
 const uid = () => crypto.randomUUID();
 // 제품 이름이라 번역하지 않는다.
-const KIND_LABEL: Record<Kind, string> = { pwsh: "PowerShell 7", powershell: "Windows PowerShell", cmd: "cmd", shell: "Terminal", ssh: "SSH" };
+const KIND_LABEL: Record<Kind, string> = { pwsh: "PowerShell 7", powershell: "Windows PowerShell", cmd: "cmd", wsl: "WSL", shell: "Terminal", ssh: "SSH" };
 // macOS에는 PowerShell/cmd와 UAC 관리자 실행이 없다. 기본 셸(Terminal)만 쓴다.
 const IS_MAC = navigator.userAgent.includes("Mac");
-const KINDS: Kind[] = IS_MAC ? ["shell", "ssh"] : ["pwsh", "powershell", "cmd", "ssh"];
+const KINDS: Kind[] = IS_MAC ? ["shell", "ssh"] : ["pwsh", "powershell", "cmd", "wsl", "ssh"];
+
+/** 이 PC에 설치된 셸 (백엔드 shell_status). wsl은 쓸 수 있는 배포판 이름들 */
+type ShellStatus = { pwsh: boolean; wsl: string[] };
+let shellStatusP: Promise<ShellStatus> | undefined;
+/** 한 번만 조회해 둔다. 조회에 실패하면 PowerShell 7은 있다고 보고 WSL은 없다고 본다 (기존 동작 유지) */
+const shellStatus = () => (shellStatusP ??= invoke<ShellStatus>("shell_status").catch(() => ({ pwsh: true, wsl: [] })));
+
+/** 종류 목록에 보일 것. 설치되지 않은 셸은 뺀다. 이미 저장된 세션의 종류(keep)는 설치돼 있지 않아도 남긴다. */
+function availableKinds(s: ShellStatus, keep?: Kind): Kind[] {
+  return KINDS.filter((k) => k === keep || (k === "pwsh" ? s.pwsh : k === "wsl" ? s.wsl.length > 0 : true));
+}
 const defaultEmoji = (kind: Kind) => (kind === "ssh" ? "🔐" : "💻");
 
 let root: Folder = { id: "root", type: "folder", name: "", open: true, children: [] };
@@ -159,8 +172,9 @@ function persist() {
   invoke("profiles_save", { json: JSON.stringify(root, null, 2) }).catch((e) => showStatus(t("profile.saveFailed", { error: String(e) })));
 }
 
-function defaultTree(): Folder {
+function defaultTree(s: ShellStatus): Folder {
   const mk = (name: string, kind: Kind): Profile => ({ id: uid(), type: "profile", name, kind });
+  const winShells = [...(s.pwsh ? [mk("PowerShell 7", "pwsh")] : []), mk("Windows PowerShell", "powershell"), mk("cmd", "cmd")];
   return {
     id: "root",
     type: "folder",
@@ -172,7 +186,7 @@ function defaultTree(): Folder {
         type: "folder",
         name: "Local",
         open: true,
-        children: IS_MAC ? [mk("Terminal", "shell")] : [mk("PowerShell 7", "pwsh"), mk("Windows PowerShell", "powershell"), mk("cmd", "cmd")],
+        children: IS_MAC ? [mk("Terminal", "shell")] : winShells,
       },
     ],
   };
@@ -183,14 +197,20 @@ function defaultTree(): Folder {
 /** 편집 결과. secret은 새로 저장할 비밀번호(비어 있으면 없음), clearSecret은 저장된 비밀번호 삭제 */
 type EditResult = { profile: Profile; secret: string; clearSecret: boolean };
 
-function editProfile(p?: Profile): Promise<EditResult | null> {
+async function editProfile(p?: Profile): Promise<EditResult | null> {
+  const shells = await shellStatus();
+  // 이미 저장된 배포판이 지금은 없어도 선택 목록에 남겨서 편집할 때 값이 바뀌지 않게 한다.
+  const distros = p?.distro && !shells.wsl.includes(p.distro) ? [p.distro, ...shells.wsl] : shells.wsl;
   return new Promise((resolve) => {
     let result: EditResult | null = null;
     const dlg = modal((d) => {
       d.innerHTML = `<form method="dialog"><h3></h3>
         <label><span data-i18n="profile.field.name"></span> <input name="name" required /></label>
-        <label><span data-i18n="profile.field.kind"></span> <select name="kind">${KINDS
+        <label><span data-i18n="profile.field.kind"></span> <select name="kind">${availableKinds(shells, p?.kind)
           .map((k) => `<option value="${k}">${KIND_LABEL[k]}</option>`)
+          .join("")}</select></label>
+        <label class="wsl-only"><span data-i18n="profile.field.distro"></span> <select name="distro">${distros
+          .map((n) => `<option value="${n}">${n}</option>`)
           .join("")}</select></label>
         <div class="iconrow"><span data-i18n="profile.field.icon"></span>
           <span class="pick"><span class="icoprev"></span><button type="button" class="ico-change" data-i18n="common.change"></button></span>
@@ -287,19 +307,23 @@ function editProfile(p?: Profile): Promise<EditResult | null> {
       (d.querySelector(".secret-clear") as HTMLElement).hidden = !saved;
       const sshBox = d.querySelector(".ssh-only") as HTMLElement;
       const localBox = d.querySelector(".local-only") as HTMLElement;
+      const wslBox = d.querySelector(".wsl-only") as HTMLElement;
       const iconPrev = d.querySelector(".icoprev") as HTMLElement;
       let icon: ProfileIcon | undefined = p?.icon;
       const refreshIcon = () => iconPrev.replaceChildren(iconNode(icon, defaultEmoji(f("kind").value as Kind)));
       const sync = () => {
         const ssh = f("kind").value === "ssh";
+        const wsl = f("kind").value === "wsl";
         sshBox.hidden = !ssh;
-        localBox.hidden = ssh || IS_MAC; // 로컬 전용 항목은 관리자 체크박스뿐인데 맥에는 없다
+        wslBox.hidden = !wsl;
+        localBox.hidden = ssh || wsl || IS_MAC; // 로컬 전용 항목은 관리자 체크박스뿐인데 맥에는 없고, WSL은 관리자 실행을 지원하지 않는다
         refreshIcon();
       };
 
       if (p) {
         f("name").value = p.name;
         f("kind").value = p.kind;
+        if (p.distro) f("distro").value = p.distro;
         f("admin").checked = !!p.admin;
         f("host").value = p.host ?? "";
         f("port").value = String(p.port ?? 22);
@@ -376,7 +400,8 @@ function editProfile(p?: Profile): Promise<EditResult | null> {
           name: f("name").value.trim(),
           kind,
           ...(icon ? { icon } : {}),
-          ...(kind !== "ssh" && f("admin").checked ? { admin: true } : {}),
+          ...(kind !== "ssh" && kind !== "wsl" && f("admin").checked ? { admin: true } : {}),
+          ...(kind === "wsl" && f("distro").value ? { distro: f("distro").value } : {}),
           ...(kind === "ssh"
             ? {
                 host: f("host").value.trim(),
@@ -683,13 +708,14 @@ function render() {
 export async function initProfiles(connect: (p: Profile) => void) {
   onConnect = connect;
 
+  const shells = await shellStatus();
   try {
     const json = await invoke<string | null>("profiles_load");
-    root = json ? (JSON.parse(json) as Folder) : defaultTree();
+    root = json ? (JSON.parse(json) as Folder) : defaultTree(shells);
     if (!json) persist();
   } catch (e) {
     showStatus(t("profile.loadFailed", { error: String(e) }));
-    root = defaultTree();
+    root = defaultTree(shells);
   }
   render();
   loadLocalSessions();

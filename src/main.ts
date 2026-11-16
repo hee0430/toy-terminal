@@ -671,7 +671,12 @@ new ResizeObserver(fitVisible).observe($("#terms"));
 function openLocalTab(title: string, shell: string, admin: boolean, icon?: ProfileIcon, profile?: Profile) {
   const cmd = admin ? "open_local_admin" : "open_local";
   const shellName = shell === "pwsh" ? "PowerShell 7" : shell === "powershell" ? "Windows PowerShell 5.1" : "cmd.exe";
-  const context = shell === "shell" ? "Local shell: Terminal" : `Windows local shell: ${shellName}`;
+  const context =
+    shell === "shell"
+      ? "Local shell: Terminal"
+      : shell === "wsl" || shell.startsWith("wsl:")
+        ? `WSL${shell.startsWith("wsl:") ? ` (${shell.slice(4)})` : ""}; a Linux shell such as bash`
+        : `Windows local shell: ${shellName}`;
   return createTab(title, "local", (cols, rows) => invoke<string>(cmd, { shell, cols, rows }), admin, icon, context, profile);
 }
 
@@ -1355,10 +1360,11 @@ async function connectProfile(p: Profile) {
   showStatus("");
   try {
     if (p.kind !== "ssh") {
+      const shell = p.kind === "wsl" && p.distro ? `wsl:${p.distro}` : p.kind; // WSL은 배포판까지 넘긴다
       if (p.admin) {
         showStatus(t("connect.uac"));
-        await withConnecting(p.name, () => openLocalTab(p.name, p.kind, true, p.icon, p));
-      } else await openLocalTab(p.name, p.kind, false, p.icon, p);
+        await withConnecting(p.name, () => openLocalTab(p.name, shell, true, p.icon, p));
+      } else await openLocalTab(p.name, shell, false, p.icon, p);
       showStatus("");
       return;
     }

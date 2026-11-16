@@ -218,7 +218,7 @@ dialog [hidden] { display: none; }
 .row button.ok:hover { background: var(--btn-green-hover); border-color: var(--btn-green-hover); }
 .row button.danger { background: var(--btn-red); border-color: var(--btn-red); }
 .row button.danger:hover { background: var(--btn-red-hover); border-color: var(--btn-red-hover); }
-.ssh-only[hidden], .local-only[hidden] { display: none; }
+.ssh-only[hidden], .local-only[hidden], .wsl-only[hidden] { display: none; }
 .iconrow { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
 
 /* 아이콘 */
