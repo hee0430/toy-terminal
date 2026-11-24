@@ -22,7 +22,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 /// 터미널 한 개(탭 한 개)에 대한 입력 채널. 로컬 PTY와 SSH를 같은 인터페이스로 다룬다.
 pub enum Session {
@@ -113,9 +113,19 @@ fn main() {
         std::process::exit(admin::run_helper(&args));
     }
 
-    edit::cleanup_stale();
-
     tauri::Builder::default()
+        // 가장 먼저 등록한다. 두 번째 실행은 여기서 끝나므로 아래 setup(임시 편집 파일 정리)은 첫 인스턴스만 돈다.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
+        .setup(|_app| {
+            edit::cleanup_stale();
+            Ok(())
+        })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
