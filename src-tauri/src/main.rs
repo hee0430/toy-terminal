@@ -106,6 +106,21 @@ fn is_installed() -> bool {
     std::env::current_exe().is_ok_and(|exe| exe.with_file_name("uninstall.exe").exists())
 }
 
+/// 데이터 폴더(profiles.json 등이 있는 곳)를 파일 관리자로 연다.
+#[tauri::command]
+fn open_data_dir() -> Result<(), String> {
+    let dir = paths::data_dir()?;
+    let program = if cfg!(target_os = "windows") {
+        "explorer.exe"
+    } else if cfg!(target_os = "macos") {
+        "open"
+    } else {
+        "xdg-open"
+    };
+    // explorer.exe는 폴더를 열어도 종료 코드가 1일 수 있어서 실행에 성공했는지만 본다.
+    std::process::Command::new(program).arg(dir).spawn().map(|_| ()).map_err(|e| format!("폴더를 열 수 없습니다: {e}"))
+}
+
 fn main() {
     // 관리자 도우미로 실행된 경우 창 없이 셸 중계만 하고 끝난다.
     let args: Vec<String> = std::env::args().collect();
@@ -137,6 +152,7 @@ fn main() {
             term_resize,
             term_close,
             is_installed,
+            open_data_dir,
             local::shell_status,
             profiles::profiles_load,
             profiles::profiles_save,

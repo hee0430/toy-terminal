@@ -25,6 +25,12 @@ pub fn data_path(name: &str) -> Result<PathBuf, String> {
     Ok(exe.with_file_name(name))
 }
 
+/// 데이터 파일들이 있는 폴더 (탐색기로 여는 용도). 위치 규칙은 `data_path`를 따른다.
+pub fn data_dir() -> Result<PathBuf, String> {
+    let file = data_path("profiles.json")?;
+    file.parent().map(Path::to_path_buf).ok_or_else(|| "데이터 폴더를 알 수 없습니다".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -35,6 +41,12 @@ mod tests {
             mac_data_dir(Path::new("/Users/me")),
             Path::new("/Users/me/Library/Application Support/com.toy.terminal")
         );
+    }
+
+    #[test]
+    fn 데이터_폴더는_파일_경로의_부모다() {
+        let f = data_path("settings.json").unwrap();
+        assert_eq!(data_dir().unwrap(), f.parent().unwrap());
     }
 
     #[test]

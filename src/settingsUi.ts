@@ -286,7 +286,18 @@ function generalPage(root: HTMLElement) {
   l.append(el("span", "", t("settings.general.scrollback")), scrollback);
   const k = el("label", "fontrow");
   k.append(el("span", "", t("settings.general.keepalive")), keepalive);
-  root.append(el("h4", "", t("settings.general.heading")), l, el("p", "hint", t("settings.general.hint")), k, el("p", "hint", t("settings.general.keepaliveHint", { min: MIN_KEEPALIVE })), reset);
+  const openData = el("button", "", t("settings.general.openData"));
+  openData.type = "button";
+  const openDataMsg = el("p", "hint");
+  openData.addEventListener("click", async () => {
+    try {
+      await invoke("open_data_dir");
+      openDataMsg.textContent = "";
+    } catch (e) {
+      openDataMsg.textContent = t("settings.general.openDataFailed", { error: String(e) });
+    }
+  });
+  root.append(el("h4", "", t("settings.general.heading")), l, el("p", "hint", t("settings.general.hint")), k, el("p", "hint", t("settings.general.keepaliveHint", { min: MIN_KEEPALIVE })), reset, openData, el("p", "hint", t("settings.general.openDataHint")), openDataMsg);
   vaultSection(root);
 }
 

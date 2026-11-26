@@ -228,7 +228,10 @@
       "hint": "Scrollback is kept in memory per tab, 1,000 to 50,000 lines (default 10,000). Lowering it drops the older lines right away.",
       "reset": "Reset to default",
       "keepalive": "Keep-alive signal (seconds)",
-      "keepaliveHint": "0 turns it off. When the server is quiet, a signal is sent at this interval to stop the connection from being dropped; after 3 unanswered signals the connection is closed. Use {min} seconds or more. Applies to tabs you connect from now on."
+      "keepaliveHint": "0 turns it off. When the server is quiet, a signal is sent at this interval to stop the connection from being dropped; after 3 unanswered signals the connection is closed. Use {min} seconds or more. Applies to tabs you connect from now on.",
+      "openData": "Open data folder",
+      "openDataHint": "Opens the folder that holds your sessions (profiles.json), settings and host fingerprints. When backing up or moving to another PC, copy the saved passwords (secrets.json) too.",
+      "openDataFailed": "Could not open the folder: {error}"
     },
     "menu": {
       "general": "General",
