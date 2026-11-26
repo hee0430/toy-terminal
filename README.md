@@ -63,6 +63,8 @@ Windows는 실행 파일과 같은 폴더에, macOS는 `~/Library/Application Su
 | `secrets.json` | 마스터 비밀번호로 암호화한 저장 비밀번호 |
 | `logs/` | AI 기록, 명령 실행 감사 기록 |
 
+**다른 PC로 옮길 때**: 설정 > 일반의 "데이터 폴더 열기"로 이 폴더를 열어 `profiles.json`, `settings.json`, `secrets.json`, `known_hosts.json`을 새 PC의 같은 위치로 복사하세요. 저장한 비밀번호는 기존 마스터 비밀번호로 풀립니다. 키 파일 인증을 쓰는 세션은 키 파일도 새 PC의 같은 경로에 두어야 하고, `settings.json`에는 AI 도우미 API 키가 평문으로 들어 있으니 전달할 때 주의하세요.
+
 마스터 비밀번호는 어디에도 저장되지 않습니다. 잊으면 저장된 비밀번호를 복구할 수 없고, 설정 > 일반에서 전체 삭제 후 새로 정해야 합니다.
 
 ## 개발

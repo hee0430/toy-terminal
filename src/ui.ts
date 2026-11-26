@@ -81,6 +81,50 @@ export function showConnecting(name: string, onCancel: () => void): () => void {
   return () => dlg.open && dlg.close();
 }
 
+/** 탭 내용 저장 범위 선택. 마지막 N줄(기본 1000) 또는 전체. 취소하면 undefined, 전체는 null, 아니면 줄 수 */
+export function askSaveLines(total: number, defaultLines: number): Promise<number | null | undefined> {
+  return new Promise((resolve) => {
+    let result: number | null | undefined;
+    const dlg = modal((d) => {
+      d.innerHTML = `<form method="dialog"><h3></h3>
+        <label class="radio"><input type="radio" name="scope" value="n" checked /><span class="r-n"></span><input type="number" class="n" min="1" step="1" /></label>
+        <label class="radio"><input type="radio" name="scope" value="all" /><span class="r-all"></span></label>
+        <p class="hint"></p><p class="err"></p>
+        <div class="row"><button type="button" class="cancel"></button><button type="submit" class="ok"></button></div></form>`;
+      d.querySelector("h3")!.textContent = t("tab.saveTitle");
+      d.querySelector(".r-n")!.textContent = t("tab.saveLast");
+      d.querySelector(".r-all")!.textContent = t("tab.saveAll");
+      d.querySelector(".hint")!.textContent = t("tab.saveHint", { total });
+      d.querySelector(".cancel")!.textContent = t("common.cancel");
+      d.querySelector(".ok")!.textContent = t("common.confirm");
+      const num = d.querySelector<HTMLInputElement>("input.n")!;
+      num.value = String(defaultLines);
+      const err = d.querySelector(".err")!;
+      const all = d.querySelector<HTMLInputElement>("input[value=all]")!;
+      const nRadio = d.querySelector<HTMLInputElement>("input[value=n]")!;
+      num.addEventListener("focus", () => (nRadio.checked = true));
+      const sync = () => (num.disabled = all.checked);
+      d.querySelectorAll("input[name=scope]").forEach((r) => r.addEventListener("change", sync));
+      d.querySelector("form")!.addEventListener("submit", (e) => {
+        if (all.checked) {
+          result = null;
+          return;
+        }
+        const n = Number(num.value.trim());
+        if (!Number.isInteger(n) || n < 1) {
+          e.preventDefault(); // 닫지 않고 오류를 보인다
+          err.textContent = t("tab.saveInvalid");
+          return;
+        }
+        result = n;
+      });
+      d.querySelector(".cancel")!.addEventListener("click", () => d.close());
+    });
+    dlg.addEventListener("close", () => resolve(result));
+    dlg.querySelector<HTMLInputElement>("input.n")!.select();
+  });
+}
+
 /** 여러 선택지 중 하나. 줄은 본문(한 줄씩), 닫거나 Esc면 첫 번째가 아니라 cancelValue를 돌려준다. */
 export function choose(
   title: string,

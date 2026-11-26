@@ -121,6 +121,12 @@ fn open_data_dir() -> Result<(), String> {
     std::process::Command::new(program).arg(dir).spawn().map(|_| ()).map_err(|e| format!("폴더를 열 수 없습니다: {e}"))
 }
 
+/// 사용자가 저장 대화상자에서 고른 경로에 텍스트를 쓴다 (탭 내용 저장).
+#[tauri::command]
+fn save_text_file(path: String, content: String) -> Result<(), String> {
+    std::fs::write(&path, content).map_err(|e| format!("파일을 저장할 수 없습니다: {e}"))
+}
+
 fn main() {
     // 관리자 도우미로 실행된 경우 창 없이 셸 중계만 하고 끝난다.
     let args: Vec<String> = std::env::args().collect();
@@ -153,6 +159,7 @@ fn main() {
             term_close,
             is_installed,
             open_data_dir,
+            save_text_file,
             local::shell_status,
             profiles::profiles_load,
             profiles::profiles_save,

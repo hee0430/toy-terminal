@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -11,7 +11,8 @@ import "@xterm/xterm/css/xterm.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./fonts.css";
 import "./style.css";
-import { ask, choose, confirmBox, shieldIcon, showConnecting, showMenu } from "./ui";
+import { ask, askSaveLines, choose, confirmBox, shieldIcon, showConnecting, showMenu } from "./ui";
+import { bufferToText, countLines, DEFAULT_SAVE_LINES, safeFileName, stamp } from "./termExport";
 import { initProfiles, rerenderProfiles, showStatus, type Profile } from "./profiles";
 import { parseForward } from "./sshForward";
 import { hasSecret, readSecret } from "./vault";
@@ -437,8 +438,26 @@ function tabMenu(e: MouseEvent, tab: Tab) {
     if (group.length < MAX_SPLIT) items.push({ label: t("tab.splitFlip"), fn: () => ((splitRows = !splitRows), applyLayout()) });
   }
   if (items.length > groupStart) items[groupStart].sep = true; // 분할 항목은 구분선 아래에
-  items.push({ label: t("tab.closeAll"), fn: closeAllTabs, sep: true }); // 되돌릴 수 없는 동작이라 따로 구분한다
+  items.push({ label: t("tab.saveToFile"), fn: () => saveTabToFile(tab), sep: true });
+  items.push({ label: t("tab.closeAll"), fn: closeAllTabs }); // 되돌릴 수 없는 동작이라 따로 구분한다
   showMenu(e.clientX, e.clientY, items);
+}
+
+/** 탭의 터미널 내용(스크롤백 + 화면)을 텍스트 파일로 저장한다. 범위 모달과 저장 대화상자 어느 쪽에서든 취소할 수 있다. */
+async function saveTabToFile(tab: Tab) {
+  const buf = tab.term.buffer.active;
+  const lines = await askSaveLines(countLines(buf), DEFAULT_SAVE_LINES);
+  if (lines === undefined) return;
+  const path = await saveDialog({
+    defaultPath: `${safeFileName(tab.title)}_${stamp()}.txt`,
+    filters: [{ name: t("tab.saveFilter"), extensions: ["txt", "log"] }],
+  });
+  if (!path) return;
+  try {
+    await invoke("save_text_file", { path, content: bufferToText(buf, lines) });
+  } catch (e) {
+    await confirmBox(String(e), t("common.close"));
+  }
 }
 
 async function renameTab(tab: Tab) {

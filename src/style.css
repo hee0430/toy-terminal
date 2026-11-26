@@ -319,3 +319,6 @@ dialog .erow { justify-content: flex-start; margin: 3px 0; }
 .aitoggle.off { background: var(--btn-gray); border-color: var(--btn-gray); }
 .aitoggle.off:hover { background: var(--btn-gray-hover); }
 .aifields.disabled { opacity: .5; }
+dialog label.radio { justify-content: flex-start; }
+dialog label.radio input[type=radio] { width: auto; }
+dialog label.radio input.n { width: 90px; }
