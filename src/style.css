@@ -158,7 +158,8 @@ body.resizing { user-select: none; cursor: col-resize; }
 #sftp-download i { color: var(--ic-down); }
 #sftp-upload i { color: var(--ic-up); }
 #sftp-mkdir i { color: var(--ic-folder); }
-#sftp-path { flex: 1; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 4px; }
+.sftp-head button { flex: none; }
+#sftp-path { flex: 1; min-width: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 4px; }
 #sftp-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
 #sftp-list li { display: flex; gap: 6px; padding: 4px 8px; cursor: default; align-items: center; user-select: none; }
 #sftp-list li:hover { background: var(--hover); }
